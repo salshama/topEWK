@@ -218,39 +218,21 @@ def plot_stacked_histogram(histogram_name, semilep_histograms, fullhad_histogram
     - variation: str, the BSM variation being plotted.
     - selection: str, either 'NoSel' or 'TestSel'.
     """
-    
-    # checking identical histograms before plotting
-    if np.array_equal(semilep_histograms[0][1], fullhad_histograms[0][1]) and \
-       np.array_equal(semilep_histograms[0][1], fulllep_histograms[0][1]):
-       print(f"Warning: Identical histograms found for {histogram_name}, Variation: {variation}, Selection: {selection}\n")
-       print(f"Semi-leptonic Values: {semilep_histograms[0][1]}")
-       print(f"Fully Hadronic Values: {fullhad_histograms[0][1]}")
-       print(f"Fully Leptonic Values: {fulllep_histograms[0][1]}\n")
-    
-    plt.figure(figsize=(8,6))
-    
-    # stack histograms for all processes
-    total_semilep = np.zeros_like(semilep_histograms[0][1])
-    total_fulllep = np.zeros_like(fulllep_histograms[0][1])
-    total_fullhad = np.zeros_like(fullhad_histograms[0][1])
-    
-    for bin_edges, hist_values in semilep_histograms:
-        plt.hist(bin_edges[:-1], bins=bin_edges, weights=hist_values, histtype='step', stacked=True,label='Semi-leptonic', alpha=0.7, linewidth=2)
-        total_semilep += hist_values
+
+    plt.figure(figsize=(8, 6))
         
-    for bin_edges, hist_values in fulllep_histograms:
-        plt.hist(bin_edges[:-1], bins=bin_edges, weights=hist_values, histtype='step', stacked=True, label='Fully leptonic', alpha=0.6, linewidth=2)
-        total_fulllep += hist_values
-    
-    for bin_edges, hist_values in fullhad_histograms:
-        plt.hist(bin_edges[:-1], bins=bin_edges, weights=hist_values, histtype='step', stacked=True, label='Fully hadronic', alpha=0.5, linewidth=2)
-        total_fullhad += hist_values
+    plt.hist([semilep_histograms[0][0][:-1],fullhad_histograms[0][0][:-1],fulllep_histograms[0][0][:-1]],
+    weights=[semilep_histograms[0][1],fullhad_histograms[0][1],fulllep_histograms[0][1]],
+    stacked=True,bins=np.linspace(10,140,20),label=["Semi-leptonic","Fully hadronic","Fully leptonic"],
+    color=['silver','lightgreen','cornflowerblue'], edgecolor='black')
 
     xlabel = determine_xlabel(histogram_name)
     
     plt.xlabel(xlabel)
     plt.ylabel('Events')
-    plt.title(f'{histogram_name} (({variation}) ({selection}))')
+    plt.ylim(1, None)
+    plt.yscale('log')
+    plt.title(f'{histogram_name} ({variation}) ({selection})')
     plt.legend()
     plt.grid(True)
     
@@ -260,19 +242,19 @@ def plot_stacked_histogram(histogram_name, semilep_histograms, fullhad_histogram
     plt.show()
     plt.close()
     
-    # saving each histogram (semilep, fullhad, fulllep) as a ROOT file
-    if total_semilep is not None:
-        print('Saving semi-leptonic histogram as ROOT file\n')
-        save_histogram_as_root(f"{histogram_name[:-2]}", bin_edges, total_semilep, output_dir, 'semilep', variation, selection)
+    # saving histograms as ROOT files
+    print('ROOT FILE FOR SEMI-LEPTONIC\n')
+    save_histogram_as_root(f"{histogram_name[:-2]}",semilep_histograms[0][0],
+    semilep_histograms[0][1],output_dir,"semilep",variation,selection)
     
-    if total_fullhad is not None:
-        print('Saving fully hadronic histogram as ROOT file\n')
-        save_histogram_as_root(f"{histogram_name[:-2]}", bin_edges, total_fullhad, output_dir, 'fullhad', variation, selection)
+    print('ROOT FILE FOR FULLY LEPTONIC\n')
+    save_histogram_as_root(f"{histogram_name[:-2]}",fulllep_histograms[0][0],
+    fulllep_histograms[0][1],output_dir,"fulllep",variation,selection)
     
-    if total_fulllep is not None:
-        print('Saving fully leptonic histogram as ROOT file\n')
-        save_histogram_as_root(f"{histogram_name[:-2]}", bin_edges, total_fulllep, output_dir, 'fulllep', variation, selection)
-    
+    print('ROOT FILE FOR FULLY HADRONIC\n')
+    save_histogram_as_root(f"{histogram_name[:-2]}",fullhad_histograms[0][0],
+    fullhad_histograms[0][1],output_dir,"fullhad",variation,selection)
+
 # processing multiple root files
 def process_multiple_files(root_files, output_dir):
     histograms_by_variation = {}
@@ -310,26 +292,7 @@ def process_multiple_files(root_files, output_dir):
                     
                     else:
                         histograms_by_variation[variation][classification][hist_name][selection] = hist_data
-                    
-#                     # no selection extraction based on hist_name since it is done with file_name previously
-#                     if classification == 'semilep':
-#                         if hist_name not in histograms_by_variation[variation]['semilep']:
-#                             histograms_by_variation[variation]['semilep'][hist_name] = {}
-#                         if selection in histograms_by_variation[variation]['semilep'][hist_name] and histograms_by_variation[variation]['semilep'][hist_name][selection]:
-#                             histograms_by_variation[variation]['semilep'][hist_name][selection] = (hist_data[0], hist_data[1]+histograms_by_variation[variation]['semilep'][hist_name][selection][1])
-#                         else:
-#                             histograms_by_variation[variation]['semilep'][hist_name][selection] = hist_data
-#                         
-#                     if classification == 'fulllep':
-#                         if hist_name not in histograms_by_variation[variation]['fulllep']:
-#                             histograms_by_variation[variation]['fulllep'][hist_name] = {}
-#                         histograms_by_variation[variation]['fulllep'][hist_name][selection] = hist_data
-# 
-#                     elif classification == 'fullhad':
-#                         if hist_name not in histograms_by_variation[variation]['fullhad']:
-#                             histograms_by_variation[variation]['fullhad'][hist_name] = {}
-#                        histograms_by_variation[variation]['fullhad'][hist_name][selection] = hist_data
-                        
+    
     for variation, histograms in histograms_by_variation.items():
     
         if histograms['semilep'] and histograms['fullhad'] and histograms['fulllep']:
@@ -350,6 +313,6 @@ def process_multiple_files(root_files, output_dir):
                         if semilep_hist_data is not None and fullhad_hist_data is not None and fulllep_hist_data is not None:
                             plot_stacked_histogram(hist_name, [semilep_hist_data], [fullhad_hist_data], [fulllep_hist_data], variation, selection, output_dir)
                             print(f"Plotting for histogram: {hist_name}, Variation: {variation}, Selection: {selection}\n")
-
+                            
 # Process files
 process_multiple_files(root_files, output_dir)
