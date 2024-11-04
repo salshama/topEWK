@@ -220,7 +220,8 @@ def plot_stacked_histogram(histogram_name, semilep_histograms, fullhad_histogram
     """
 
     plt.figure(figsize=(8, 6))
-        
+    
+    # stacking histograms
     plt.hist([semilep_histograms[0][0][:-1],fullhad_histograms[0][0][:-1],fulllep_histograms[0][0][:-1]],
     weights=[semilep_histograms[0][1],fullhad_histograms[0][1],fulllep_histograms[0][1]],
     stacked=True,bins=np.linspace(10,140,20),label=["Semi-leptonic","Fully hadronic","Fully leptonic"],
@@ -239,6 +240,34 @@ def plot_stacked_histogram(histogram_name, semilep_histograms, fullhad_histogram
     output_filename = f"{histogram_name[:-2]}_{variation}_{selection}.png"
     plt.savefig("/ceph/salshamaily/topEWK_FCCee/plots/"+output_filename)
     
+    plt.show()
+    plt.close()
+    
+    # overlaying histograms
+    plt.figure(figsize=(8, 6))
+    
+    plt.hist(semilep_histograms[0][0][:-1], weights=semilep_histograms[0][1],
+    bins=np.linspace(10, 140, 20), histtype='stepfilled', label="Semi-leptonic",
+    color='silver', linewidth=2, alpha=0.7)
+    
+    plt.hist(fulllep_histograms[0][0][:-1], weights=fulllep_histograms[0][1],
+    bins=np.linspace(10, 140, 20), histtype='stepfilled', label="Fully leptonic",
+    color='cornflowerblue', linewidth=2, alpha=0.5)
+    
+    plt.hist(fullhad_histograms[0][0][:-1], weights=fullhad_histograms[0][1],
+    bins=np.linspace(10, 140, 20), histtype='stepfilled', label="Fully hadronic",
+    color='lightgreen', linewidth=2, alpha=0.5)
+    
+    plt.xlabel(xlabel)
+    plt.ylabel('Events')
+    plt.ylim(1, None)
+    plt.yscale('log')
+    plt.title(f'{histogram_name} ({variation}) ({selection})')
+    plt.legend()
+    plt.grid(True)
+
+    output_filename_ol = f"{histogram_name[:-2]}_{variation}_{selection}_ol.png"
+    plt.savefig("/ceph/salshamaily/topEWK_FCCee/plots/"+output_filename_ol)
     plt.show()
     plt.close()
     
