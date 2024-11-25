@@ -63,24 +63,6 @@ def extract_variation(file_name):
     if "tv_ttAdown" in base_name:
         return "tv_ttAdown"
     
-    if "vr_ttAup" in base_name:
-        return "vr_ttAup"
-        
-    if "vr_ttAdown" in base_name:
-        return "vr_ttAdown"
-        
-    if "ta_ttZdown" in base_name:
-        return "ta_ttZdown"
-        
-    if "ta_ttZup" in base_name:
-        return "ta_ttZup"
-        
-    if "tv_ttZup" in base_name:
-        return "tv_ttZup"
-    
-    if "tv_ttZdown" in base_name:
-        return "tv_ttZdown"
-    
     if "vr_ttZup" in base_name:
         return "vr_ttZup"
         
@@ -113,7 +95,6 @@ def extract_selection(file_name):
         print(f"Warning: No selection found for {base_name}")
         return ""
 
-# Process histograms and find deviations
 def process_histograms():
     hist_sm_dict = {}
 
@@ -127,24 +108,26 @@ def process_histograms():
         # Only process SM files
         if variable in ['Emiss_energy', 'muon_pass_energy', 'electron_pass_energy'] and variation == "SM":
             file = ROOT.TFile.Open(root_file)
-            hist_name = f"{variable}"#_{process}_{variation}_{selection}"
+            hist_name = f"{variable}"
             hist_sm = file.Get(hist_name)
-            
+
             # Verify histogram and type
             if not hist_sm or not isinstance(hist_sm, ROOT.TH1):
                 print(f"Error: Histogram '{hist_name}' not found")
                 file.Close()
                 continue
-            
+
             # Make a deep copy and store in dictionary
             hist_sm_copy = copy.deepcopy(hist_sm)
             hist_sm_copy.SetDirectory(0)
 
-            # Save to dictionary by selection and process
+            # Save to dictionary by selection, process, and variable
             if selection not in hist_sm_dict:
                 hist_sm_dict[selection] = {}
-            hist_sm_dict[selection][process] = hist_sm_copy
-            
+            if process not in hist_sm_dict[selection]:
+                hist_sm_dict[selection][process] = {}
+            hist_sm_dict[selection][process][variable] = hist_sm_copy
+
             file.Close()
             print(f"Processed SM histogram for {variable}, selection: {selection}, process: {process}")
 
@@ -158,30 +141,34 @@ def process_histograms():
         # Only process BSM files (skip SM and irrelevant variables)
         if variation == "SM" or variable not in ['Emiss_energy', 'muon_pass_energy', 'electron_pass_energy']:
             continue
-        
-        # Check if corresponding SM histogram exists
-        if selection not in hist_sm_dict or process not in hist_sm_dict[selection]:
-            print(f"Warning: No corresponding SM histogram for {variable}, selection: {selection}, process: {process}")
+
+        # Check if corresponding SM histogram exists and matches the variable
+        if (
+            selection not in hist_sm_dict or
+            process not in hist_sm_dict[selection] or
+            variable not in hist_sm_dict[selection][process]
+        ):
+            print(f"Warning: No corresponding SM histogram for variable '{variable}', selection: {selection}, process: {process}")
             continue
-        
-        hist_sm = hist_sm_dict[selection][process]
-        
+
+        hist_sm = hist_sm_dict[selection][process][variable]
+
         print('\nMoving on to BSM histograms...\n')
 
         # Open BSM file and get histogram
         file = ROOT.TFile.Open(root_file)
-        hist_name = f"{variable}"#_{process}_{variation}_{selection}"
+        hist_name = f"{variable}"
         hist_bsm = file.Get(hist_name)
 
         if not hist_bsm or not isinstance(hist_bsm, ROOT.TH1):
             print(f"Error: Histogram '{hist_name}' not found or is not a histogram in {root_file}")
             file.Close()
             continue
-        
+
         # Calculate deviation histogram (BSM - SM)
-        hist_deviation = hist_bsm.Clone(f"hist_deviation_{variable}_{process}_{variation}_{selection}")
+        hist_deviation = hist_bsm.Clone(f"deviation_hist_{variable}_{process}_{variation}_{selection}")
         hist_deviation.Add(hist_sm, -1)  # BSM - SM
-                
+
         # Save deviation histogram
         output_file_name = os.path.join(output_directory, f"deviation_histogram_{variable}_{process}_{variation}_{selection}.root")
         output_file = ROOT.TFile.Open(output_file_name, "RECREATE")
