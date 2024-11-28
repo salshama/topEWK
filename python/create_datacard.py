@@ -10,7 +10,7 @@ def create_datacard(energy_type, variation, signal_processes, background_process
         for proc in signal_processes
     ]
     background_paths = [
-        f"{background_base_path}/{energy_type}_{proc}_TestSel.root"
+        f"{background_base_path}/{energy_type}_{proc.replace('SM', '')}_SM_TestSel.root"
         for proc in background_processes
     ]
     
