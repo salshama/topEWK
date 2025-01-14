@@ -107,6 +107,8 @@ def read_data(root_files):
         new_filename = filename[53:-len(filename.split("365")[-1])]
         return new_filename
 
+    print('Processing ROOT files...')
+    
     for file in root_files:
         f = ROOT.TFile.Open(file)
         
@@ -145,7 +147,15 @@ def plot_data(root_files):
 
     histograms = {}
     
-    print('Processing ROOT files...')
+    # color map for processes
+    process_colors = {
+        "thadThad": ROOT.kGreen-9,
+        "tlepTlep": ROOT.kBlue-9,
+        "tlepThad": ROOT.kGray,
+        "thadTlep": ROOT.kMagenta-9
+    }
+    
+    print('Processing plotting files...')
     
     for file in root_files:
         f = ROOT.TFile.Open(file)
@@ -153,11 +163,6 @@ def plot_data(root_files):
         variation = get_variation(file)
         selection = get_selection(file)
         process   = get_process(file)
-        
-        print(variation)
-        print(selection)
-        print(process)
-        print()
     
         for key in f.GetListOfKeys():
             variable = key.ReadObj()
@@ -167,7 +172,7 @@ def plot_data(root_files):
                 hist.SetDirectory(0)
                 hist.SetTitle('')
                 
-                # grouping histograms according to keys -> variable, selection, variation
+                # grouping histograms according to nested dictionaries
                 variable_name = hist.GetName()
                 
                 if variation not in histograms:
@@ -182,8 +187,9 @@ def plot_data(root_files):
         
         f.Close()
     
-    # grouping histograms using nested dictionaries
-    print('Starting to group...')
+    # plotting grouped histograms
+    print('Starting to plot...')
+    
     for variation, selection_dict in histograms.items():
         for selection, variable_dict in selection_dict.items():
             for variable_name, hist_list, in variable_dict.items():
@@ -191,7 +197,6 @@ def plot_data(root_files):
                 # sort the histograms by the number of entries for stacking
                 hist_list.sort(key=lambda x: x[1].GetEntries(), reverse=True)
 
-                print('Starting to plot...')
                 # initializing canvas, stack, legend
                 c1 = ROOT.TCanvas('c1', 'c1', 800, 600)
                 l1 = ROOT.TLegend(0.7,0.7,0.9,0.9)
@@ -202,8 +207,9 @@ def plot_data(root_files):
                 
                 # adding histogramas to the stack object
                 for i, (process, hist) in enumerate(hist_list):
+                    color = process_colors.get(process)
                     hist.SetLineColor(ROOT.kBlack)
-                    hist.SetFillColor(i+2)
+                    hist.SetFillColor(color)
                     s1.Add(hist)
                     l1.AddEntry(hist, process, 'f')
                 
